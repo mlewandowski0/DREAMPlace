@@ -11,6 +11,7 @@ import os
 import sys
 import time
 import numpy as np
+import torch
 import logging
 # for consistency between python2 and python3
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -32,6 +33,12 @@ def place(params, learning_rate_value):
 
     assert (not params.gpu) or configure.compile_configurations["CUDA_FOUND"] == 'TRUE', \
             "CANNOT enable GPU without CUDA compiled"
+    if params.gpu and not torch.cuda.is_available():
+        logging.warning("GPU requested but no CUDA GPU is available; falling back to CPU")
+        params.gpu = 0
+    if params.gpu and getattr(params, "deterministic_flag", 0) and os.environ.get("DREAMPLACE_ALLOW_CUDA_DETERMINISTIC") != "1":
+        logging.warning("GPU deterministic mode is disabled by default; set DREAMPLACE_ALLOW_CUDA_DETERMINISTIC=1 to override")
+        params.deterministic_flag = 0
 
     np.random.seed(params.random_seed)
     # read database

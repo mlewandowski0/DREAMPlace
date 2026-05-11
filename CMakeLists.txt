@@ -23,11 +23,23 @@ string(REGEX REPLACE "-std=c\\+\\+([0-9a-z]+)" " " CMAKE_CXX_FLAGS_INIT ${CMAKE_
 endif(CMAKE_CXX_FLAGS)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_INIT}" CACHE STRING "Flags used by the compiler during all build types." FORCE)
 
-if(NOT CMAKE_CXX_ABI)
-    set(CMAKE_CXX_ABI 0 CACHE STRING
-        "Choose the value for _GLIBCXX_USE_CXX11_ABI, options are: 0|1."
-        FORCE)
-endif(NOT CMAKE_CXX_ABI)
+find_package(Python COMPONENTS Interpreter)
+if(NOT DEFINED CMAKE_CXX_ABI)
+    execute_process(COMMAND ${Python_EXECUTABLE} -c
+        "import torch; print(int(torch._C._GLIBCXX_USE_CXX11_ABI))"
+        OUTPUT_VARIABLE TORCH_CXX_ABI
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET)
+    if(TORCH_CXX_ABI MATCHES "^[01]$")
+        set(CMAKE_CXX_ABI ${TORCH_CXX_ABI} CACHE STRING
+            "Choose the value for _GLIBCXX_USE_CXX11_ABI, options are: 0|1."
+            FORCE)
+    else()
+        set(CMAKE_CXX_ABI 0 CACHE STRING
+            "Choose the value for _GLIBCXX_USE_CXX11_ABI, options are: 0|1."
+            FORCE)
+    endif()
+endif()
 message(STATUS "CMAKE_CXX_ABI: _GLIBCXX_USE_CXX11_ABI=${CMAKE_CXX_ABI}")
 add_definitions(-D_GLIBCXX_USE_CXX11_ABI=${CMAKE_CXX_ABI})
 
@@ -149,7 +161,7 @@ if (CUDA_FOUND)
 
   # Manually add support for compute capability 12.0 (Blackwell)
   # as cuda_select_nvcc_arch_flags doesn't recognize it yet (cmake version 3.26.4)
-  if (${CUDA_VERSION_MAJOR} VERSION_GREATER_EQUAL "12" AND ${CUDA_VERSION_MINOR} VERSION_GREATER_EQUAL "8")
+  if (${CUDA_VERSION_MAJOR} VERSION_GREATER "12" OR (${CUDA_VERSION_MAJOR} VERSION_EQUAL "12" AND ${CUDA_VERSION_MINOR} VERSION_GREATER_EQUAL "8"))
     list(APPEND CUDA_ARCH_FLAGS "-gencode" "arch=compute_120,code=sm_120")
     message(STATUS "Added manual support for sm_120 (Blackwell architecture)")
   endif()

@@ -402,6 +402,8 @@ int computeTriangleDensityMapCallKernel(
       num_bins_x, num_bins_y, xl, yl, xh, yh, bin_size_x / 2, bin_size_y / 2,
       bin_size_x, bin_size_y, 1 / bin_size_x, 1 / bin_size_y, atomic_add_op,
       density_map_tensor, sorted_node_map);
+  cudaError_t status = cudaGetLastError();
+  checkCUDA(status);
 
   // computeTriangleDensityMapSimpleLikeCPU<<<block_count, thread_count>>>(
   //    x_tensor, y_tensor,
@@ -495,6 +497,8 @@ int computeExactDensityMapCallKernel(
       bin_center_x_tensor, bin_center_y_tensor, num_nodes, num_bins_x,
       num_bins_y, xl, yl, xh, yh, bin_size_x, bin_size_y, num_impacted_bins_x,
       num_impacted_bins_y, fixed_node_flag, atomic_add_op, density_map_tensor);
+  cudaError_t status = cudaGetLastError();
+  checkCUDA(status);
 
   return 0;
 }
